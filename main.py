@@ -1,5 +1,6 @@
 import pandas as pd
-from class1 import section_dt, sub_grp_dt, sub_dt, shift_dt
+from class1 import section_dt, sub_grp_dt, sub_dt, shift_dt, teacher_dt
+
 sec_sub_dt = pd.merge(section_dt, sub_grp_dt, on="grp_code", how="left")
 
 sec_sub_dt.drop(["name_x", "name_y"], axis=1, inplace= True)
@@ -18,9 +19,9 @@ def time_duration(row):
 shift_dt["duration"] = shift_dt[["start", "end"]].apply(time_duration, axis=1)
 
 
+
+
+
 if __name__ == "__main__":
-    print(section_dt)
-    print(sub_grp_dt)
-    print(sec_sub_dt)
-    print(shift_dt)
+    print(teacher_dt)
     print(sub_dt)

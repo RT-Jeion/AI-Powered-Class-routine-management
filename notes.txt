@@ -1,5 +1,8 @@
 Get all the relevant data from the csv files and organize by pandas.
 
+
+FILE: class1.py 
+====================================================================================
 ## classes.csv: ---> class_dt
 
 columns --> id, name, code
@@ -39,3 +42,17 @@ columns --> id, name, grp_code, has_subjects
 ## teachers.csv: ---> teacher_dt
 
 columns --> id, name, code, department, designation
+
+
+
+FILE: main
+===================================================================================
+## Secetion and Group subject mapped
+sec_sub_dt --> merged, section_dt and sub_grp_dt
+* on grp_code * based on sub_grp_dt
+
+
+# added a new columns to shift_dt -->duration
+* Time duration of shifts between [ end - start ]
+
+

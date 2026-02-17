@@ -1,16 +1,17 @@
-from class1 import shift_dt
+from  main import teacher_dt, sec_sub_map
 
-def time_convert(t):
-    t = t.split(":")
-    return float(t[0]) + ( float(t[1]) + (float(t[2]) / 60))/60
+teacher_dt = teacher_dt.drop(columns="has_subjects")
+sec_sub_map = sec_sub_map.drop(columns="sub_names")
 
-def time_duration(row):
-    time1 = row["start"]
-    time2 = row["end"]
-    return time_convert(time2) - time_convert(time1)
+def find_eligible(section_sub):
+    eligible = teacher_dt[teacher_dt["subjects"]].apply(lambda t_subs: any(s in section_sub for s in t_subs))
 
+    return list(teacher_dt.loc[eligible, 'name'])
 
-shift_dt["duration"] = shift_dt[["start", "end"]].apply(time_duration, axis=1)
+sec_teacher_dt = sec_sub_map[["code", "group_code"]].copy()
+sec_teacher_dt["teachers"] = sec_sub_map["has_subjects"].apply(find_eligible)
 
+print(sec_teacher_dt)
 if __name__ == "__main__":
-    print(shift_dt)
+    print(sec_sub_map)
+    print(teacher_dt)
