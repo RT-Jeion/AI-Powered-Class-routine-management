@@ -1,5 +1,5 @@
 import pandas as pd
-
+import ast
 # from classes.csv
 class_dt = pd.read_csv("classes.csv")
 class_dt = class_dt[["id", "name", "code"]]
@@ -38,7 +38,8 @@ sub_dt = sub_dt[["id", "name", "code", "department"]]
 # from subject_groups.csv
 sub_grp_dt = pd.read_csv("subject_groups.csv")
 sub_grp_dt = sub_grp_dt[["id", "name", "grp_code", "has_subjects"]]
-
+sub_grp_dt = sub_grp_dt.rename(columns={"id":"grp_id"})
+sub_grp_dt["has_subjects"] = sub_grp_dt["has_subjects"].apply(ast.literal_eval)
 # Final sub_grp_dt
 
 
