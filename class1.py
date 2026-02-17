@@ -26,9 +26,46 @@ class_room_dt = class_room_dt.sort_values("room_no")
 shift_dt = pd.read_csv("shift_management_logs.csv")
 shift_dt = shift_dt[["id","weekends", "start", "end"]]
 
-if __name__ == "__main__":
+# Final shift_dt
 
+
+# from subjects.csv
+sub_dt = pd.read_csv("subjects.csv")
+sub_dt = sub_dt[["id", "name", "code", "department"]]
+# Final sub_dt
+
+
+# from subject_groups.csv
+sub_grp_dt = pd.read_csv("subject_groups.csv")
+sub_grp_dt = sub_grp_dt[["id", "name", "grp_code", "has_subjects"]]
+
+# Final sub_grp_dt
+
+
+# From teachers.csv
+teacher_dt = pd.read_csv("teachers.csv")
+teacher_dt = teacher_dt[["id","name","code", "department", "designation"]]
+
+# Final teacher_dt
+
+if __name__ == "__main__":
+    print("Class Data: ")
     print(class_dt)
+
+    print("\nSection Data: ")
     print(section_dt)
+
+    print("\nClass Room Data: ")
     print(class_room_dt)
+
+    print("\nShift Data: ")
     print(shift_dt)
+
+    print("\nSubject Data: ")
+    print(sub_dt)
+
+    print("\nGroup Subject Data: ")
+    print(sub_grp_dt)
+
+    print("\nTeacher Data: ")
+    print(teacher_dt)

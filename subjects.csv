@@ -1,9 +1,9 @@
-"id","name","code","has_type","status","created_at","updated_at"
-"1","Bangla 1st paper","101","[1]","1",NULL,NULL
-"2","Bangla 2nd paper","102","[1]","1",NULL,NULL
-"3","English 1st paper","107","[1]","1",NULL,NULL
-"4","English 2nd paper","108","[1]","1",NULL,NULL
-"5","Mathematics","109","[1]","1",NULL,NULL
-"6","Higher Mathematics","126","[1,0]","1",NULL,NULL
-"7","Accounting","450","[1]","1","2026-02-04 18:04:57","2026-02-04 18:04:57"
-"8","Geography","440","[1]","1","2026-02-04 18:05:11","2026-02-04 18:05:11"
+"id","name","department","code","has_type","status","created_at","updated_at"
+"1","Bangla 1st paper","Bangla","101","[1]","1",NULL,NULL
+"2","Bangla 2nd paper","Bangla","102","[1]","1",NULL,NULL
+"3","English 1st paper","English","107","[1]","1",NULL,NULL
+"4","English 2nd paper","English","108","[1]","1",NULL,NULL
+"5","Mathematics","Math","109","[1]","1",NULL,NULL
+"6","Higher Mathematics","Math","126","[1,0]","1",NULL,NULL
+"7","Accounting","Accounting","450","[1]","1","2026-02-04 18:04:57","2026-02-04 18:04:57"
+"8","Geography","Geography","440","[1]","1","2026-02-04 18:05:11","2026-02-04 18:05:11"

@@ -1,25 +1,41 @@
 Get all the relevant data from the csv files and organize by pandas.
 
-## classes.csv: --->
-
-class_dt
+## classes.csv: ---> class_dt
 
 columns --> id, name, code
 
-## sections.csv:
+
+## sections.csv: ---> section_dt
 
 columns --> id, name, code, grp_code(added*), classes_id
 
-*add:
+*add:   grp_code --> hsc-sci, hsc-commerces, hsc-arts
 
-grp_code as hsc-sci, hsc-commerces, hsc-arts
+*convert:  class_id --> 1,2 -> 11, 12
 
-*convert:
 
-class_id --> 1,2 -> 11, 12
-
-## class_rooms.csv
+## class_rooms.csv: ---> class_room_dt 
 
 columns --> id, room-no, number_of_row, number_of_columns, each_brench_capacity
 
-shits
+
+## shit_management_logs.csv: ---> shift_dt
+
+columns --> id, weekends, start, end
+
+
+## subjects.csv: ---> sub_dt
+
+columns --> id, name, code, department*
+
+*add: department --> Bangla, English, Math etc..
+
+
+## Subjects_groups.csv: ---> sub_grp_dt
+
+columns --> id, name, grp_code, has_subjects
+
+
+## teachers.csv: ---> teacher_dt
+
+columns --> id, name, code, department, designation
