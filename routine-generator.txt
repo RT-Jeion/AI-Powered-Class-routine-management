@@ -1,0 +1,7 @@
+Route generate korar jonno
+
+
+
+1. Time start & End start  (Source: shifts, shift_management logs)
+2. Classes & Sections (Source: classes, sections)
+3. Subject & Subject Group (Source: )
