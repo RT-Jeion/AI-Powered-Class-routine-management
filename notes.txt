@@ -1,0 +1,25 @@
+Get all the relevant data from the csv files and organize by pandas.
+
+## classes.csv: --->
+
+class_dt
+
+columns --> id, name, code
+
+## sections.csv:
+
+columns --> id, name, code, grp_code(added*), classes_id
+
+*add:
+
+grp_code as hsc-sci, hsc-commerces, hsc-arts
+
+*convert:
+
+class_id --> 1,2 -> 11, 12
+
+## class_rooms.csv
+
+columns --> id, room-no, number_of_row, number_of_columns, each_brench_capacity
+
+shits
