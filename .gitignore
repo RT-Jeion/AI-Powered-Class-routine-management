@@ -54,4 +54,9 @@ dist/
 # =========================
 .coverage
 htmlcov/
-.pytest_cache/ 
+.pytest_cache/
+
+# =========================
+# Generated output files
+# =========================
+output.txt 
