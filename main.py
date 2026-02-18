@@ -1,5 +1,5 @@
 import pandas as pd
-from class1 import section_dt, sub_grp_dt, sub_dt, shift_dt, teacher_dt
+from class1 import class_dt, section_dt, class_room_dt, shift_dt, sub_dt, sub_grp_dt, teacher_dt 
 
 sec_sub_dt = pd.merge(section_dt, sub_grp_dt, on="grp_code", how="left")
 
@@ -23,5 +23,27 @@ shift_dt["duration"] = shift_dt[["start", "end"]].apply(time_duration, axis=1)
 
 
 if __name__ == "__main__":
-    print(teacher_dt)
+    print("Classes:")
+    print(class_dt)
+
+    print("\nSections:")
+    print(section_dt)
+    
+    print("\nClass Rooms:")
+    print(class_room_dt)
+    
+    print("\nShifts:")
+    print(shift_dt)
+    
+    print("\nSubjects:")
     print(sub_dt)
+    
+    print("\nGroup Subjects:")
+    print(sub_grp_dt)
+    
+    print("\nTeachers:")
+    print(teacher_dt)
+    
+    print("\nSection with Subjects mapping:")
+    print(sec_sub_dt)
+    
