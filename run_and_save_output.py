@@ -4,7 +4,7 @@ Script to run main.py and save its console output to output.txt
 
 This script:
 1. Executes main.py using subprocess
-2. Captures all stdout output
+2. Captures all stdout and stderr output
 3. Saves the captured output to output.txt
 4. Handles errors gracefully
 5. Prints a success message when complete
