@@ -11,6 +11,7 @@ Generated routines are automatically saved to ``generated_class_routine.md``
 from __future__ import annotations
 
 import os
+import re
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -35,6 +36,9 @@ def run(prompt: str, data: Optional[dict] = None) -> str:
     action = intent.get("intent", "unknown")
 
     if action == "create_routine":
+        return _create_routine(intent, data)
+    if action == "regenerate_routine":
+        intent["force"] = True
         return _create_routine(intent, data)
     if action == "reschedule":
         return _reschedule(intent, data)
@@ -102,11 +106,21 @@ def _format_schedule(schedule: List[Dict], section_code: str) -> str:
 
 def _create_routine(intent: dict, data: dict) -> str:
     target_sections = _resolve_sections(intent, data)
+    existing_sections = md_parser.get_existing_sections()
+    force = intent.get("force", False)  # set by "regenerate" intent
+
     results: List[str] = []
     all_schedule: List[Dict] = []
     shared_avail: dict = {"teacher": {}, "room": {}}
 
     for sec_code in target_sections:
+        if sec_code in existing_sections and not force:
+            results.append(
+                f"ℹ️  Section {sec_code} already has a routine in class_routine.md.\n"
+                f"   Use \"Show routine for {sec_code}\" to view it, or\n"
+                f"   \"Regenerate routine for {sec_code}\" to create a new one."
+            )
+            continue
         sched, err = scheduler.generate_routine(sec_code, data, shared_avail)
         if err:
             results.append(f"Error for {sec_code}: {err}")
@@ -157,6 +171,14 @@ def _reschedule(intent: dict, data: dict) -> str:
         return "Please specify which day to avoid (e.g. 'Friday')."
 
     section_code: Optional[str] = intent.get("section_code")
+
+    # Auto-load section from class_routine.md if it's known but not yet in memory
+    existing_sections = md_parser.get_existing_sections()
+    if section_code and section_code not in _routines and section_code in existing_sections:
+        sched, err = scheduler.generate_routine(section_code, data)
+        if not err and sched:
+            _routines[section_code] = sched
+
     target_sections = (
         [section_code] if section_code and section_code in _routines
         else list(_routines.keys())
@@ -197,11 +219,22 @@ def _show_routine(intent: dict) -> str:
     section_code: Optional[str] = intent.get("section_code")
     if section_code:
         sec_upper = section_code.upper()
+        # First check in-memory generated routines
         match = next(
             (k for k in _routines if k.upper() == sec_upper), None
         )
         if match:
             return f"Routine for {match}:\n{_format_schedule(_routines[match], match)}"
+        # Fall back to class_routine.md
+        context = md_parser.get_context_text()
+        if context:
+            # Extract the section block from the markdown.
+            # Pattern matches from the section heading ("# Class 11A (...)") up to the next
+            # section heading or end of file, using a lookahead so the next heading is not consumed.
+            pattern = rf"(^#\s+Class\s+{re.escape(sec_upper)}\s+.*?)(?=^#\s+Class\s+|\Z)"
+            m = re.search(pattern, context, re.MULTILINE | re.DOTALL)
+            if m:
+                return f"Routine for {sec_upper} (from class_routine.md):\n\n{m.group(1).strip()}"
         return f"No routine found for '{section_code}'. Create one first."
 
     if not _routines:

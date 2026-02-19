@@ -32,6 +32,20 @@ def _heuristic(prompt: str) -> Dict[str, Any]:
     """Simple keyword/regex intent parser — works without any API key."""
     pl = prompt.lower()
 
+    if any(kw in pl for kw in ("regenerate", "recreate", "overwrite", "replace")):
+        intent: Dict[str, Any] = {"intent": "regenerate_routine"}
+        m = re.search(r"class\s*(\d+)", pl)
+        if m:
+            intent["class_name"] = f"Class {m.group(1)}"
+        m = re.search(r"\b(1[12][a-e])\b", pl, re.IGNORECASE)
+        if m:
+            intent["section_code"] = m.group(1).upper()
+        for stream_kw, grp in _STREAM_MAP.items():
+            if stream_kw in pl:
+                intent["grp_code"] = grp
+                break
+        return intent
+
     if any(kw in pl for kw in ("create", "generate", "make", "build")):
         intent: Dict[str, Any] = {"intent": "create_routine"}
         m = re.search(r"class\s*(\d+)", pl)

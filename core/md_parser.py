@@ -8,7 +8,7 @@ This module reads the existing class_routine.md template and surfaces:
 
 import os
 import re
-from typing import Dict
+from typing import Dict, List
 
 _MD_PATH = os.path.join(os.path.dirname(__file__), "..", "class_routine.md")
 
@@ -85,3 +85,16 @@ def get_context_text() -> str:
             return fh.read()
     except FileNotFoundError:
         return ""
+
+
+def get_existing_sections() -> List[str]:
+    """Return section codes that already have routines in class_routine.md.
+
+    Looks for headings of the form ``# Class 11A (Science) — Room 101``.
+    """
+    try:
+        with open(_MD_PATH, encoding="utf-8") as fh:
+            text = fh.read()
+        return re.findall(r"^#\s+Class\s+(\w+)\s+\(", text, re.MULTILINE)
+    except FileNotFoundError:
+        return []

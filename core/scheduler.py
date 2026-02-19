@@ -3,12 +3,14 @@
 A schedule is a list of entry dicts:
     {section, day, period, subject_id, subject, teacher_id, teacher, room_id, room}
 
-The generator works in two passes:
-1. For each subject in the section's group, find (day, period) slots where
-   neither the teacher nor the room is already taken, then assign.
-2. A shared availability tracker (teacher_avail, room_avail) can be passed
-   in so that cross-section conflicts are avoided when generating multiple
-   sections in one call.
+The generator assigns each subject to exactly ONE period and repeats it
+across ALL working days, matching the pattern in class_routine.md:
+    Period 1 → Subject A  (Sun, Mon, Tue, Wed, Thu)
+    Period 2 → Subject B  (Sun, Mon, Tue, Wed, Thu)
+    …
+    Period 6 → Subject F  (Sun, Mon, Tue, Wed, Thu)
+
+This yields 6 × 5 = 30 entries with no empty slots and perfect consistency.
 """
 
 from typing import Dict, List, Optional, Set, Tuple
@@ -16,13 +18,20 @@ from typing import Dict, List, Optional, Set, Tuple
 # Days used when scheduling — matches class_routine.md (Sun–Thu, Islamic week)
 DAYS: List[str] = ["Sun", "Mon", "Tue", "Wed", "Thu"]
 PERIODS: List[int] = [1, 2, 3, 4, 5, 6]  # 6 periods per day
-PERIODS_PER_SUBJECT: int = 4  # weekly periods per subject (adjust as needed)
+
+# Short display names for subjects (CSV names → display names)
+_SHORT_NAMES: Dict[str, str] = {
+    "Bangla 1st paper": "Bangla 1st",
+    "Bangla 2nd paper": "Bangla 2nd",
+    "English 1st paper": "English 1st",
+    "English 2nd paper": "English 2nd",
+    "Mathematics": "Math",
+    "Higher Mathematics": "Higher Math",
+}
 
 
-def _all_slots() -> List[Tuple[str, int]]:
-    # Interleave days so subjects spread across the week rather than bunching.
-    # Order: Mon P1, Tue P1, Wed P1, Thu P1, Fri P1, Mon P2, Tue P2, …
-    return [(d, p) for p in PERIODS for d in DAYS]
+def _short_name(name: str) -> str:
+    return _SHORT_NAMES.get(name, name)
 
 
 def generate_routine(
@@ -32,11 +41,14 @@ def generate_routine(
 ) -> Tuple[Optional[List[Dict]], Optional[str]]:
     """Generate a weekly routine for *section_code*.
 
+    Each subject is assigned to exactly one period and appears on ALL 5 days,
+    ensuring consistent, gap-free timetables.
+
     Args:
         section_code: e.g. "11A"
         data: dict returned by data_loader.load_all()
-        shared_avail: optional {"teacher": {(day,period)->set}, "room": {...}}
-                      updated in-place so multiple sections share state.
+        shared_avail: optional {"teacher": {(day,period)->set}, "room": {(day,period)->set}}
+                      updated in-place so multiple sections share room availability state.
 
     Returns:
         (schedule, error_message) — schedule is None when an error occurs.
@@ -51,6 +63,8 @@ def generate_routine(
 
     section = row.iloc[0]
     grp_code = section["grp_code"]
+    # "11" → prefer Junior teachers; "12" → prefer Senior teachers
+    prefer_senior: bool = str(section["classes_id"]) == "12"
 
     sub_groups = data["subject_groups"]
     grp = sub_groups[sub_groups["grp_code"] == grp_code]
@@ -58,67 +72,68 @@ def generate_routine(
         return None, f"No subject group found for grp_code '{grp_code}'."
 
     subject_ids: List[int] = grp.iloc[0]["has_subjects"]
-    subjects = data["subjects"][data["subjects"]["id"].isin(subject_ids)]
+    # Sort by id so the period assignment is deterministic
+    subjects = (
+        data["subjects"][data["subjects"]["id"].isin(subject_ids)]
+        .sort_values("id")
+        .reset_index(drop=True)
+    )
     teachers = data["teachers"]
     rooms = data["rooms"]
 
+    # ── Assign one dedicated room to this section ─────────────────────────────
+    # A room is "taken" if it appears in shared_avail["room"] for ANY slot that
+    # this section will occupy (all 30 day×period combinations).
+    all_section_slots = [(d, p) for d in DAYS for p in PERIODS]
+
+    def _room_is_available(room_id: int) -> bool:
+        return not any(
+            room_id in shared_avail["room"].get(slot, set())
+            for slot in all_section_slots
+        )
+
+    room = None
+    for _, r in rooms.iterrows():
+        if _room_is_available(int(r["id"])):
+            room = r
+            break
+    if room is None:
+        return None, "No available room found for section."
+
+    # Mark every slot in this section's room as taken
+    for slot in all_section_slots:
+        shared_avail["room"].setdefault(slot, set()).add(int(room["id"]))
+
+    # ── Assign subjects to periods 1–6 ────────────────────────────────────────
     schedule: List[Dict] = []
-    slots = _all_slots()
-    slot_idx = 0  # rotating start position to spread load
-
-    for _, subj in subjects.iterrows():
+    for period, (_, subj) in enumerate(subjects.iterrows(), start=1):
         dept = subj["department"]
-        dept_teachers = teachers[teachers["department"] == dept]
-        assigned = 0
+        dept_teachers = teachers[teachers["department"] == dept].copy()
 
-        for i in range(len(slots)):
-            if assigned >= PERIODS_PER_SUBJECT:
-                break
-            day, period = slots[(slot_idx + i) % len(slots)]
-            key = (day, period)
+        # Sort by designation: "Senior Teacher" > "Junior Teacher" alphabetically;
+        # reverse the sort direction based on the seniority preference.
+        dept_teachers = dept_teachers.sort_values(
+            "designation", ascending=not prefer_senior
+        )
 
-            t_busy: Set = shared_avail["teacher"].get(key, set())
-            r_busy: Set = shared_avail["room"].get(key, set())
-            # Section must not already have a class in this slot
-            if any(e["section"] == section_code and e["day"] == day and e["period"] == period
-                   for e in schedule):
-                continue
+        # Pick the preferred teacher (first after sorting)
+        if dept_teachers.empty:
+            continue
+        teacher = dept_teachers.iloc[0]
 
-            # Pick first available teacher in this department
-            teacher = None
-            for _, t in dept_teachers.iterrows():
-                if t["id"] not in t_busy:
-                    teacher = t
-                    break
-            if teacher is None:
-                continue
-
-            # Pick first available room
-            room = None
-            for _, r in rooms.iterrows():
-                if r["id"] not in r_busy:
-                    room = r
-                    break
-            if room is None:
-                continue
-
-            entry = {
+        # Create one entry per day for this (period, subject, teacher, room)
+        for day in DAYS:
+            schedule.append({
                 "section": section_code,
                 "day": day,
                 "period": period,
                 "subject_id": int(subj["id"]),
-                "subject": subj["name"],
+                "subject": _short_name(subj["name"]),
                 "teacher_id": int(teacher["id"]),
                 "teacher": teacher["name"],
                 "room_id": int(room["id"]),
                 "room": str(room["room_no"]),
-            }
-            schedule.append(entry)
-            shared_avail["teacher"].setdefault(key, set()).add(int(teacher["id"]))
-            shared_avail["room"].setdefault(key, set()).add(int(room["id"]))
-            assigned += 1
-
-        slot_idx = (slot_idx + PERIODS_PER_SUBJECT) % len(slots)
+            })
 
     return schedule, None
 
