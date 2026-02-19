@@ -3,18 +3,27 @@
 The in-memory routine store (_routines) maps section_code → schedule list.
 This module is intentionally free of I/O so it can be imported by a future
 REST API layer without modification.
+
+Generated routines are automatically saved to ``generated_class_routine.md``
+(never overwrites the source template ``class_routine.md``).
 """
 
 from __future__ import annotations
 
+import os
 from typing import Dict, List, Optional
 
 import pandas as pd
 
-from . import constraints, data_loader, intent_parser, scheduler
+from . import constraints, data_loader, formatter, intent_parser, md_parser, scheduler
 
 # In-memory store: section_code -> list[entry_dict]
 _routines: Dict[str, List[Dict]] = {}
+
+# Output file path — always written here, never to class_routine.md
+_OUTPUT_MD = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "generated_class_routine.md")
+)
 
 
 def run(prompt: str, data: Optional[dict] = None) -> str:
@@ -31,11 +40,14 @@ def run(prompt: str, data: Optional[dict] = None) -> str:
         return _reschedule(intent, data)
     if action == "show_routine":
         return _show_routine(intent)
+    if action == "save_routine":
+        return _save_to_file(data)
     return (
         "I couldn't understand your request. Try:\n"
         "  \"Create a routine for Class 11 Science\"\n"
         "  \"Reschedule all Math classes to avoid Friday\"\n"
-        "  \"Show routine for 11A\""
+        "  \"Show routine for 11A\"\n"
+        "  \"Save routine to file\""
     )
 
 
@@ -121,6 +133,10 @@ def _create_routine(intent: dict, data: dict) -> str:
     else:
         results.append("✅ No constraint violations.")
 
+    # Auto-save to generated_class_routine.md
+    save_msg = _save_to_file(data)
+    results.append(save_msg)
+
     # Preview table
     results.append("\n── Routine Preview ──")
     for sec_code in target_sections:
@@ -171,6 +187,9 @@ def _reschedule(intent: dict, data: dict) -> str:
     else:
         results.append("✅ No constraint violations after rescheduling.")
 
+    # Auto-save updated routines
+    results.append(_save_to_file(data))
+
     return "\n".join(results) if results else "Nothing to reschedule."
 
 
@@ -193,6 +212,23 @@ def _show_routine(intent: dict) -> str:
         parts.append(f"\n[{sec}]")
         parts.append(_format_schedule(sched, sec))
     return "\n".join(parts)
+
+
+def _save_to_file(data: dict) -> str:
+    """Write all in-memory routines to generated_class_routine.md.
+
+    This never touches class_routine.md.  Returns a status message.
+    """
+    if not _routines:
+        return "ℹ️  No routines to save. Generate a routine first."
+    try:
+        md = formatter.format_routines(_routines, data)
+        with open(_OUTPUT_MD, "w", encoding="utf-8") as fh:
+            fh.write(md)
+        filename = os.path.basename(_OUTPUT_MD)
+        return f"💾 Saved to {filename}"
+    except Exception as exc:
+        return f"❌ Could not save file: {exc}"
 
 
 def reset() -> None:

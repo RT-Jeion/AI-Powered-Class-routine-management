@@ -17,6 +17,7 @@ env/
 # =========================
 .env
 .env.*
+!.env.example
 
 # =========================
 # Logs
@@ -54,4 +55,9 @@ dist/
 # =========================
 .coverage
 htmlcov/
-.pytest_cache/ 
+.pytest_cache/
+
+# =========================
+# Generated output
+# =========================
+generated_class_routine.md 

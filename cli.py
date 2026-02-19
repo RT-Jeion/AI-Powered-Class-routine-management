@@ -33,6 +33,7 @@ _EXAMPLES = (
     '  -- "Reschedule all Math classes to avoid Friday"',
     '  -- "Show routine for 11A"',
     '  -- "show all routines"',
+    '  -- "Save routine to file"',
 )
 
 
@@ -62,6 +63,7 @@ def main() -> None:
         f"{len(data['teachers'])} teachers, "
         f"{len(data['subjects'])} subjects"
     )
+    print("ℹ️  Generated routines are saved to: generated_class_routine.md")
     print()
     _warn_no_key()
 

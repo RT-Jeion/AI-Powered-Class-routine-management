@@ -64,6 +64,9 @@ def _heuristic(prompt: str) -> Dict[str, Any]:
             intent["section_code"] = m.group(1).upper()
         return intent
 
+    if any(kw in pl for kw in ("save", "export", "write", "output")):
+        return {"intent": "save_routine"}
+
     if any(kw in pl for kw in ("show", "display", "view", "print", "list")):
         intent = {"intent": "show_routine"}
         m = re.search(r"\b(1[12][a-e])\b", pl, re.IGNORECASE)
@@ -87,6 +90,9 @@ For rescheduling:
 For showing a routine:
   {"intent": "show_routine", "section_code": "11A"}
 
+For saving/exporting to file:
+  {"intent": "save_routine"}
+
 Omit optional fields that are not mentioned. Use 3-letter day codes (Mon/Tue/Wed/Thu/Fri/Sat/Sun).
 Respond with valid JSON only — no extra text.
 """
@@ -101,8 +107,19 @@ def _llm(prompt: str) -> Dict[str, Any]:
         from langchain_groq import ChatGroq
         from langchain.schema import HumanMessage, SystemMessage
 
+        # Attach class_routine.md as structural context for the LLM
+        from . import md_parser
+        context = md_parser.get_context_text()
+        system_content = _LLM_SYSTEM
+        if context:
+            system_content = (
+                _LLM_SYSTEM
+                + "\n\nExisting class_routine.md (use as structural context):\n"
+                + context
+            )
+
         llm = ChatGroq(model="llama3-8b-8192", api_key=api_key, temperature=0)
-        messages = [SystemMessage(content=_LLM_SYSTEM), HumanMessage(content=prompt)]
+        messages = [SystemMessage(content=system_content), HumanMessage(content=prompt)]
         response = llm.invoke(messages)
         text = response.content.strip()
         m = re.search(r"\{.*\}", text, re.DOTALL)
