@@ -13,8 +13,8 @@ The generator works in two passes:
 
 from typing import Dict, List, Optional, Set, Tuple
 
-# Days used when scheduling (Mon–Fri; Fri can be rescheduled away via CLI)
-DAYS: List[str] = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+# Days used when scheduling — matches class_routine.md (Sun–Thu, Islamic week)
+DAYS: List[str] = ["Sun", "Mon", "Tue", "Wed", "Thu"]
 PERIODS: List[int] = [1, 2, 3, 4, 5, 6]  # 6 periods per day
 PERIODS_PER_SUBJECT: int = 4  # weekly periods per subject (adjust as needed)
 

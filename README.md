@@ -50,16 +50,21 @@ python cli.py "Show routine for 11A"
 >>> Create a routine for Class 11 Science
 ✅ Generated routine for 11A (24 entries).
 ✅ No constraint violations.
+💾 Saved to generated_class_routine.md
 
 ── Routine Preview ──
 [11A]
+  Sun P1: Bangla 1st paper | Mr Bangla1 | Room 101
   Mon P1: Bangla 1st paper | Mr Bangla1 | Room 101
-  Mon P2: Bangla 2nd paper | Mr Bangla1 | Room 101
   ...
 
->>> Reschedule all Math classes to avoid Friday
-✅ 11A: 'Math' classes moved away from Fri.
+>>> Reschedule all Math classes to avoid Wednesday
+✅ 11A: 'Math' classes moved away from Wed.
 ✅ No constraint violations after rescheduling.
+💾 Saved to generated_class_routine.md
+
+>>> Save routine to file
+💾 Saved to generated_class_routine.md
 ```
 
 ---
@@ -72,11 +77,15 @@ python cli.py "Show routine for 11A"
 ├── core/
 │   ├── __init__.py
 │   ├── data_loader.py      # Load CSV files into pandas DataFrames
+│   ├── md_parser.py        # Parse class_routine.md for shift distribution & break rules
+│   ├── formatter.py        # Format schedules as Markdown (class_routine.md structure)
 │   ├── constraints.py      # Teacher/room double-booking & timeslot collision checks
 │   ├── scheduler.py        # Heuristic routine generation and rescheduling
 │   ├── intent_parser.py    # Groq LLM intent parsing with keyword fallback
 │   └── agent.py            # Agentic loop: parse → load → plan → apply → validate → respond
 ├── csv_files/              # Source data (classes, sections, teachers, subjects, …)
+├── class_routine.md        # Template/context — structure, shift distribution, break rules
+├── generated_class_routine.md  # Output file (auto-created, never overwrites class_routine.md)
 ├── requirements.txt
 ├── .env.example
 ├── class1.py               # Original data-loading scripts (unchanged)
@@ -93,12 +102,18 @@ User prompt
     │
     ▼
 intent_parser  ──(Groq LLM or keyword fallback)──▶  intent dict
-    │
+    │                        │
+    │                  md_parser reads class_routine.md
+    │                  (shift distribution, break rules, LLM context)
     ▼
 agent.run()
     ├─ create_routine  ──▶ scheduler.generate_routine()  ──▶ constraints.validate()
+    │                                                     ──▶ formatter.format_routines()
+    │                                                     ──▶ saves generated_class_routine.md
     ├─ reschedule      ──▶ scheduler.reschedule_subject() ──▶ constraints.validate()
-    └─ show_routine    ──▶ format in-memory routines
+    │                                                     ──▶ saves generated_class_routine.md
+    ├─ show_routine    ──▶ format in-memory routines
+    └─ save_routine    ──▶ formatter.format_routines()    ──▶ saves generated_class_routine.md
 ```
 
 ### Supported intents
@@ -111,12 +126,20 @@ agent.run()
 | "Move English away from Monday" | `reschedule` |
 | "Show routine for 11A" | `show_routine` |
 | "Display all routines" | `show_routine` |
+| "Save routine to file" | `save_routine` |
+| "Export schedule" | `save_routine` |
 
 ### Constraint checks
 
 - **Teacher double-booking** — same teacher in two sections at the same time
 - **Room double-booking** — same room used by two sections simultaneously
 - **Timeslot collision** — a section scheduled for two subjects in the same slot
+- **30-minute break** — enforced after period 3 in every section table
+
+### Output
+
+Generated routines are saved to **`generated_class_routine.md`** (automatically after every `create_routine` or `reschedule` command, or explicitly with `save_routine`).
+`class_routine.md` is never overwritten — it remains the structural template.
 
 ---
 
